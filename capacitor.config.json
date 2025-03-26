@@ -1,15 +1,21 @@
 {
   "appId": "aiccoin.nocorps.org",
-  "appName": "AIC Coin",
+  "appName": "aiccoin",
   "webDir": "dist",
   "bundledWebRuntime": false,
-  "server": {
-    "hostname": "aiccoin.netlify.app",
-    "androidScheme": "https"
-  },
   "plugins": {
     "SplashScreen": {
-      "launchShowDuration": 0
+      "launchShowDuration": 5
+    },
+    "App": {
+      "appUrlOpen": {
+        "enabled": true
+      }
     }
+  },
+  "server": {
+    "hostname": "aiccoin.netlify.app",
+    "androidScheme": "https",
+    "cleartext": true
   }
 }

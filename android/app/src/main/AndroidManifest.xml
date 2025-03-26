@@ -15,21 +15,45 @@
             android:label="@string/title_activity_main"
             android:theme="@style/AppTheme.NoActionBarLaunch"
             android:launchMode="singleTask"
-            android:exported="true">
+            android:exported="true"
+            android:autoVerify="true">
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- Combined intent filter for all types of URLs and schemes -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                
+                <!-- Handle https links -->
+                <data android:scheme="https" android:host="aiccoin.netlify.app" />
+                
+                <!-- Handle aiccoin:// scheme -->
+                <data android:scheme="aiccoin" />
+            </intent-filter>
+
+            <!-- Specific intent filter for register URLs with referral codes -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" 
+                      android:host="aiccoin.netlify.app" 
+                      android:pathPrefix="/register" />
+            </intent-filter>
+
+            <!-- New intent filter with autoVerify -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" />
-                <data android:host="aiccoin.netlify.app" />
+                <data android:scheme="https" 
+                      android:host="aiccoin.netlify.app" />
             </intent-filter>
-
         </activity>
 
         <provider

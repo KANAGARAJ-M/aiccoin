@@ -232,10 +232,10 @@
         <button type="submit" class="submit-button" :disabled="isSubmitting">Register</button>
       </div>
 
-      <div class="login-link">
+      <!-- <div class="login-link">
         Already have an account?
         <router-link to="/login" class="link">Login here</router-link>
-      </div>
+      </div> -->
     </form>
   </div>
 
@@ -276,30 +276,63 @@ export default {
     // Generate Unique Referral Code
     const generateReferralCode = () => 'REF' + Math.random().toString(36).substring(2, 12).toUpperCase();
 
-    // Auto-fill referral code from URL or Telegram WebApp
+    // Auto-fill referral code from URL, Telegram WebApp, or deep link
     onMounted(() => {
       // Check URL parameters first
       const urlParams = new URLSearchParams(window.location.search);
       const urlRef = urlParams.get('ref');
 
+      // Check if app was opened through a deep link (in Android app)
+      const checkDeepLink = async () => {
+        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+          try {
+            // Import the App plugin from Capacitor
+            const { App } = await import('@capacitor/app');
+            
+            // Get the initial URL that launched the app (if any)
+            const { url } = await App.getLaunchUrl() || { url: null };
+            
+            if (url) {
+              // Extract referral code from deep link
+              const deepLinkUrl = new URL(url);
+              const deepLinkRef = deepLinkUrl.searchParams.get('ref');
+              if (deepLinkRef) {
+                referralCode.value = deepLinkRef;
+                return true;
+              }
+            }
+          } catch (error) {
+            console.error('Error checking deep link:', error);
+          }
+        }
+        return false;
+      };
+
       // Check Telegram WebApp data
-      const tgWebApp = window.Telegram?.WebApp;
-      if (tgWebApp) {
-        try {
-          const startParam = tgWebApp.initDataUnsafe?.start_param;
-          if (startParam) {
-            referralCode.value = startParam;
-          } else if (urlRef) {
+      const checkTelegram = () => {
+        const tgWebApp = window.Telegram?.WebApp;
+        if (tgWebApp) {
+          try {
+            const startParam = tgWebApp.initDataUnsafe?.start_param;
+            if (startParam) {
+              referralCode.value = startParam;
+              return true;
+            }
+          } catch (error) {
+            console.error('Error getting Telegram start parameter:', error);
+          }
+        }
+        return false;
+      };
+
+      // Try each method in order of priority
+      checkDeepLink().then(hasDeepLink => {
+        if (!hasDeepLink) {
+          if (!checkTelegram() && urlRef) {
             referralCode.value = urlRef;
           }
-        } catch (error) {
-          console.error('Error getting Telegram start parameter:', error);
-          if (urlRef) referralCode.value = urlRef;
         }
-      } else {
-        // Fallback to URL parameter if Telegram WebApp is not available
-        if (urlRef) referralCode.value = urlRef;
-      }
+      });
     });
 
     // Add new refs for validation
