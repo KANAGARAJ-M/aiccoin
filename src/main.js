@@ -51,6 +51,9 @@ if (!window.Capacitor && window.location.hostname === 'aiccoin.netlify.app') {
     const isAndroid = /Android/i.test(navigator.userAgent);
     const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
     
+    // Track if app was successfully opened
+    let appOpenedSuccessfully = false;
+    
     if (isAndroid) {
       // First try an iframe to avoid popup blockers
       const iframe = document.createElement('iframe');
@@ -62,10 +65,15 @@ if (!window.Capacitor && window.location.hostname === 'aiccoin.netlify.app') {
       setTimeout(() => {
         window.location.href = intentUrl;
         
-        // As last resort, try universal links
+        // Check if app was opened after a short delay
         setTimeout(() => {
-          window.location.href = `https://aiccoin.netlify.app${path}${searchParams ? '?' + searchParams : ''}`;
-        }, 500);
+          if (document.visibilityState !== 'hidden') {
+            // App wasn't opened, show Play Store download option
+            showAppDownloadModal();
+          } else {
+            appOpenedSuccessfully = true;
+          }
+        }, 1000);
       }, 100);
     } else if (isIOS) {
       // iOS approach
@@ -75,16 +83,122 @@ if (!window.Capacitor && window.location.hostname === 'aiccoin.netlify.app') {
         if (document.visibilityState !== 'hidden') {
           // App wasn't opened, redirect to app store
           window.location.href = 'https://apps.apple.com/app/aiccoin/idXXXXXXXXXX';
+        } else {
+          appOpenedSuccessfully = true;
         }
-      }, 500);
+      }, 1000);
     } else {
-      // Desktop or other device, just try the custom scheme
-      window.location.href = appUrl;
+      // Desktop or other device, show download options
+      showAppDownloadModal();
     }
+    
+    // Hide the banner if we attempted to open the app
+    const banner = document.getElementById('app-banner');
+    if (banner) {
+      banner.style.display = 'none';
+    }
+  }
+  
+  // Function to show download modal when app isn't installed
+  function showAppDownloadModal() {
+    // Create the modal overlay
+    const modal = document.createElement('div');
+    modal.id = 'app-download-modal';
+    modal.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    `;
+    
+    // Create the modal content
+    const modalContent = document.createElement('div');
+    modalContent.style.cssText = `
+      background: #fff;
+      border-radius: 12px;
+      max-width: 90%;
+      width: 360px;
+      padding: 24px;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    `;
+    
+    // Modal header
+    const header = document.createElement('h3');
+    header.textContent = 'App Not Found';
+    header.style.cssText = `
+      margin-top: 0;
+      color: #333;
+      font-size: 20px;
+      margin-bottom: 16px;
+    `;
+    
+    // Modal message
+    const message = document.createElement('p');
+    message.textContent = 'It looks like you don\'t have the AIC Coin app installed yet. Download it now for the best experience!';
+    message.style.cssText = `
+      color: #666;
+      margin-bottom: 24px;
+      line-height: 1.5;
+      font-size: 16px;
+    `;
+    
+    // Download button
+    const downloadBtn = document.createElement('button');
+    downloadBtn.textContent = 'Download from Play Store';
+    downloadBtn.style.cssText = `
+      background: #00ccff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 12px 24px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-bottom: 12px;
+      width: 100%;
+    `;
+    downloadBtn.addEventListener('click', () => {
+      window.location.href = 'https://play.google.com/store/apps/details?id=aiccoin.nocorps.org';
+    });
+    
+    // Cancel button
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = 'Continue with Web Version';
+    cancelBtn.style.cssText = `
+      background: transparent;
+      color: #666;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 12px 24px;
+      font-size: 14px;
+      cursor: pointer;
+      width: 100%;
+    `;
+    cancelBtn.addEventListener('click', () => {
+      document.body.removeChild(modal);
+    });
+    
+    // Append all elements
+    modalContent.appendChild(header);
+    modalContent.appendChild(message);
+    modalContent.appendChild(downloadBtn);
+    modalContent.appendChild(cancelBtn);
+    modal.appendChild(modalContent);
+    
+    // Add to body
+    document.body.appendChild(modal);
   }
   
   // Make the function directly accessible from onclick events
   window.tryOpenApp = tryOpenApp;
+  window.showAppDownloadModal = showAppDownloadModal;
   
   // Add a banner to open app if on mobile
   if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
@@ -119,6 +233,42 @@ if (!window.Capacitor && window.location.hostname === 'aiccoin.netlify.app') {
       });
     });
   }
+}
+
+// Add a banner to open app if on mobile
+if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+  // Wait for DOM to be ready
+  document.addEventListener('DOMContentLoaded', () => {
+    const banner = document.createElement('div');
+    banner.id = 'app-banner';
+    banner.style.cssText = `
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #00ccff;
+      color: white;
+      padding: 12px;
+      text-align: center;
+      z-index: 9999;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: sans-serif;
+      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+    `;
+    banner.innerHTML = `
+      <span style="flex: 1;">Open in AIC Coin App</span>
+      <button id="open-app-btn" style="background: white; color: #00ccff; border: none; padding: 8px 16px; border-radius: 4px; font-weight: bold; margin: 0 10px;">Open</button>
+      <button id="close-banner-btn" style="background: transparent; color: white; border: none; font-size: 18px; padding: 0 10px;">&times;</button>
+    `;
+    document.body.appendChild(banner);
+    
+    document.getElementById('open-app-btn').addEventListener('click', tryOpenApp);
+    document.getElementById('close-banner-btn').addEventListener('click', () => {
+      banner.style.display = 'none';
+    });
+  });
 }
 
 //npx cap init "AIC Coin" "aiccoin.nocorps.org" --web-dir=dist
