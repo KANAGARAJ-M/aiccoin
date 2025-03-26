@@ -248,9 +248,9 @@
           <!-- <img src="@/assets/google-play-badge.png" alt="Get it on Google Play" /> -->
           Get it on Google Play
         </button>
-        <!-- <button @click="continueToWeb" class="web-button">
+        <button @click="continueToWeb" class="web-button">
           Continue to Web Version
-        </button> -->
+        </button>
       </div>
     </div>
   </div>
@@ -260,7 +260,7 @@
 import { auth, db } from '../firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { createUserDocument, updateReferralSystem, updateCoinBalance } from '../models/userModel';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 
 export default {
@@ -339,6 +339,17 @@ export default {
     const errors = ref([]);
     const isSubmitting = ref(false);
     const showPlayStoreModal = ref(false);
+    const isNativePlatform = ref(false);
+
+    // Check if running in Capacitor native platform
+    onMounted(() => {
+      // Detect if we're running in the native app or web browser
+      if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+        isNativePlatform.value = true;
+      }
+      
+      // Rest of your onMounted code
+    });
 
     const validateForm = () => {
       errors.value = [];
@@ -422,9 +433,16 @@ export default {
           console.log("Updating Referral System for", referralCode.value);
           await updateReferralSystem(referralCode.value, userId, email.value, randomCoinBalance);
         }
+        
         await updateCoinBalance(userId, 1000, 'Welcome bonus');
-        // Show Play Store Modal
-        showPlayStoreModal.value = true;
+        
+        // Only show Play Store Modal if on web (not in the native app)
+        if (!isNativePlatform.value) {
+          showPlayStoreModal.value = true;
+        } else {
+          // If in native app, redirect to home immediately
+          router.push('/');
+        }
       } catch (error) {
         if (error.code === 'auth/email-already-in-use') {
           errors.value.push('This email address is already registered. Please login instead.');
@@ -443,7 +461,15 @@ export default {
     };
 
     const goToPlayStore = () => {
-      window.location.href = 'https://play.google.com/store/apps/details?id=aiccoin.nocorps.org';
+      // Try to use the device's native app store opener if available
+      if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+        window.Capacitor.Plugins.App.openUrl({ 
+          url: 'https://play.google.com/store/apps/details?id=aiccoin.nocorps.org' 
+        });
+      } else {
+        // Fallback to regular navigation
+        window.location.href = 'https://play.google.com/store/apps/details?id=aiccoin.nocorps.org';
+      }
     };
 
     const continueToWeb = () => {
@@ -462,7 +488,8 @@ export default {
       isSubmitting,
       showPlayStoreModal,
       goToPlayStore,
-      continueToWeb
+      continueToWeb,
+      isNativePlatform
     };
   }
 };
