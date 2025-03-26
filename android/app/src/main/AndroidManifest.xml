@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="aiccoin.nocorps.org">
 
     <application
         android:allowBackup="true"
@@ -15,38 +16,22 @@
             android:label="@string/title_activity_main"
             android:theme="@style/AppTheme.NoActionBarLaunch"
             android:launchMode="singleTask"
-            android:exported="true"
-            android:autoVerify="true">
+            android:exported="true">
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- Combined intent filter for all types of URLs and schemes -->
+            <!-- Handle custom scheme links (aiccoin://) -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                
-                <!-- Handle https links -->
-                <data android:scheme="https" android:host="aiccoin.netlify.app" />
-                
-                <!-- Handle aiccoin:// scheme -->
                 <data android:scheme="aiccoin" />
             </intent-filter>
 
-            <!-- Specific intent filter for register URLs with referral codes -->
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" 
-                      android:host="aiccoin.netlify.app" 
-                      android:pathPrefix="/register" />
-            </intent-filter>
-
-            <!-- New intent filter with autoVerify -->
+            <!-- Handle https links with App Links verification -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -66,8 +51,6 @@
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
     </application>
-
-    <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
 </manifest>

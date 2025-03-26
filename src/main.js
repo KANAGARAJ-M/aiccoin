@@ -30,40 +30,51 @@ if (!window.Capacitor && window.location.hostname === 'aiccoin.netlify.app') {
   function tryOpenApp() {
     // Current URL path and parameters
     const currentUrl = new URL(window.location.href);
-    const path = currentUrl.pathname;
+    const path = currentUrl.pathname || '/';
     const searchParams = new URLSearchParams(currentUrl.search).toString();
     
+    // Remove leading slash for the custom scheme
+    const pathNoSlash = path.startsWith('/') ? path.substring(1) : path;
+    
     // Create custom scheme URL: aiccoin://[path]?[query]
-    let appUrl = `aiccoin://${path.substring(1)}`;
+    let appUrl = `aiccoin://${pathNoSlash}`;
     if (searchParams) {
       appUrl += `?${searchParams}`;
     }
     
-    // Create Intent URL for Android
+    // Create Intent URL for Android with more reliable format
     const fallbackUrl = encodeURIComponent(window.location.href);
-    const intentUrl = `intent://${path.substring(1)}?${searchParams}#Intent;scheme=aiccoin;package=aiccoin.nocorps.org;S.browser_fallback_url=${fallbackUrl};end`;
+    // Use component form of intent URL for better compatibility
+    const intentUrl = `intent://${pathNoSlash}?${searchParams}#Intent;scheme=aiccoin;package=aiccoin.nocorps.org;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;S.browser_fallback_url=${fallbackUrl};end`;
     
     // Try several approaches based on device/browser
     const isAndroid = /Android/i.test(navigator.userAgent);
     const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
     
     if (isAndroid) {
-      // Try Android intent URL first
-      window.location.href = intentUrl;
+      // First try an iframe to avoid popup blockers
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = appUrl;
+      document.body.appendChild(iframe);
       
-      // Fallback to simple scheme URL
+      // Then try the intent URL after a short delay
       setTimeout(() => {
-        window.location.href = appUrl;
+        window.location.href = intentUrl;
+        
+        // As last resort, try universal links
+        setTimeout(() => {
+          window.location.href = `https://aiccoin.netlify.app${path}${searchParams ? '?' + searchParams : ''}`;
+        }, 500);
       }, 100);
     } else if (isIOS) {
-      // iOS is simpler
+      // iOS approach
       window.location.href = appUrl;
       
-      // Fallback after delay to stay on website if app not installed
       setTimeout(() => {
         if (document.visibilityState !== 'hidden') {
-          // App wasn't opened, we're still here
-          console.log("App not installed, staying on website");
+          // App wasn't opened, redirect to app store
+          window.location.href = 'https://apps.apple.com/app/aiccoin/idXXXXXXXXXX';
         }
       }, 500);
     } else {
@@ -71,6 +82,9 @@ if (!window.Capacitor && window.location.hostname === 'aiccoin.netlify.app') {
       window.location.href = appUrl;
     }
   }
+  
+  // Make the function directly accessible from onclick events
+  window.tryOpenApp = tryOpenApp;
   
   // Add a banner to open app if on mobile
   if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
