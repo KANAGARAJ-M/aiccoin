@@ -54,19 +54,30 @@ if (!window.Capacitor && window.location.hostname === 'aiccoin.netlify.app') {
       if (banner) banner.style.display = 'none';
       
       // Modern implementation for Android using Intent URLs
-      const fallbackUrl = encodeURIComponent(window.location.href);
+      const fallbackUrl = encodeURIComponent('https://play.google.com/store/apps/details?id=aiccoin.nocorps.org');
       const intentUrl = `intent://${pathNoSlash}?${searchParams}#Intent;scheme=aiccoin;package=aiccoin.nocorps.org;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;S.browser_fallback_url=${fallbackUrl};end`;
       
-      // Set timer to show download dialog if app doesn't open
-      appOpenTimer = setTimeout(() => {
-        // If we're still here after 2 seconds, app probably isn't installed
-        if (Date.now() - openTime < 3000) {
-          showAppDownloadModal();
-        }
-      }, 2000);
+      // Try to open the app with a hidden iframe first (helps avoid popup blockers)
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = `aiccoin://${pathNoSlash}${searchParams ? '?' + searchParams : ''}`;
+      document.body.appendChild(iframe);
       
-      // Try to open the app
-      window.location.href = intentUrl;
+      // After a small delay, try the intent URL
+      setTimeout(() => {
+        window.location.href = intentUrl;
+        
+        // Set timer to show download dialog if app doesn't open
+        appOpenTimer = setTimeout(() => {
+          // If we're still here, app probably isn't installed
+          showAppDownloadModal();
+        }, 1500);
+        
+        // Clean up iframe
+        if (iframe && iframe.parentNode) {
+          iframe.parentNode.removeChild(iframe);
+        }
+      }, 100);
       
     } else if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
       // For iOS devices
@@ -198,7 +209,13 @@ if (!window.Capacitor && window.location.hostname === 'aiccoin.netlify.app') {
       downloadBtn.style.background = '#00ccff';
     });
     downloadBtn.addEventListener('click', () => {
+      // Direct Play Store URL
       window.location.href = 'https://play.google.com/store/apps/details?id=aiccoin.nocorps.org';
+      
+      // Close the modal after redirecting
+      if (modal && modal.parentNode) {
+        modal.parentNode.removeChild(modal);
+      }
     });
     
     // Cancel button
