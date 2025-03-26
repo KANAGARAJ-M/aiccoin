@@ -24,6 +24,89 @@ if (window.location.hostname === 'aiccoin.nocorps.org' || window.location.hostna
   window.location.href = redirectUrl;
 }
 
+// Check if we're running in a browser and attempt to redirect to the app
+if (!window.Capacitor && window.location.hostname === 'aiccoin.netlify.app') {
+  // Function to check if user's device has the app installed
+  function tryOpenApp() {
+    // Current URL path and parameters
+    const currentUrl = new URL(window.location.href);
+    const path = currentUrl.pathname;
+    const searchParams = new URLSearchParams(currentUrl.search).toString();
+    
+    // Create custom scheme URL: aiccoin://[path]?[query]
+    let appUrl = `aiccoin://${path.substring(1)}`;
+    if (searchParams) {
+      appUrl += `?${searchParams}`;
+    }
+    
+    // Create Intent URL for Android
+    const fallbackUrl = encodeURIComponent(window.location.href);
+    const intentUrl = `intent://${path.substring(1)}?${searchParams}#Intent;scheme=aiccoin;package=aiccoin.nocorps.org;S.browser_fallback_url=${fallbackUrl};end`;
+    
+    // Try several approaches based on device/browser
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    
+    if (isAndroid) {
+      // Try Android intent URL first
+      window.location.href = intentUrl;
+      
+      // Fallback to simple scheme URL
+      setTimeout(() => {
+        window.location.href = appUrl;
+      }, 100);
+    } else if (isIOS) {
+      // iOS is simpler
+      window.location.href = appUrl;
+      
+      // Fallback after delay to stay on website if app not installed
+      setTimeout(() => {
+        if (document.visibilityState !== 'hidden') {
+          // App wasn't opened, we're still here
+          console.log("App not installed, staying on website");
+        }
+      }, 500);
+    } else {
+      // Desktop or other device, just try the custom scheme
+      window.location.href = appUrl;
+    }
+  }
+  
+  // Add a banner to open app if on mobile
+  if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+    // Wait for DOM to be ready
+    document.addEventListener('DOMContentLoaded', () => {
+      const banner = document.createElement('div');
+      banner.style.cssText = `
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: #00ccff;
+        color: white;
+        padding: 12px;
+        text-align: center;
+        z-index: 9999;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-family: sans-serif;
+      `;
+      banner.innerHTML = `
+        <span>Open in AIC Coin App</span>
+        <button id="open-app-btn" style="background: white; color: #00ccff; border: none; padding: 8px 16px; border-radius: 4px; font-weight: bold;">Open</button>
+        <button id="close-banner-btn" style="background: transparent; color: white; border: none; font-size: 18px; margin-left: 10px;">&times;</button>
+      `;
+      document.body.appendChild(banner);
+      
+      document.getElementById('open-app-btn').addEventListener('click', tryOpenApp);
+      document.getElementById('close-banner-btn').addEventListener('click', () => {
+        banner.style.display = 'none';
+      });
+    });
+  }
+}
+
 //npx cap init "AIC Coin" "aiccoin.nocorps.org" --web-dir=dist
 
 import { createApp } from 'vue';

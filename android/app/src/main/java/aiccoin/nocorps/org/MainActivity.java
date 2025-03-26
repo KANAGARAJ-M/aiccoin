@@ -27,7 +27,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
-        setIntent(intent);
+        setIntent(intent); // Update the stored Intent
         handleIntent(intent);
     }
 
@@ -36,25 +36,40 @@ public class MainActivity extends BridgeActivity {
         Uri data = intent.getData();
         
         if (Intent.ACTION_VIEW.equals(action) && data != null) {
-            Log.d(TAG, "Deep link received: " + data.toString());
+            String scheme = data.getScheme();
+            String host = data.getHost();
+            String path = data.getPath();
+            String query = data.getQuery();
             
-            // Extract the path and query parameters
-            String scheme = data.getScheme(); // "https" or "aiccoin"
-            String host = data.getHost();     // "aiccoin.netlify.app" or null
-            String path = data.getPath();     // "/register" or null
-            String query = data.getQuery();   // "ref=ABCDEF" or null
+            // Construct URL to load in WebView
+            String urlToLoad = null;
             
-            // Store the URL for use in the web app
-            pendingDeepLink = data.toString();
+            // Handle custom scheme (aiccoin://)
+            if ("aiccoin".equals(scheme)) {
+                urlToLoad = "https://aiccoin.netlify.app";
+                
+                // Add path if available
+                if (host != null && !host.isEmpty()) {
+                    urlToLoad += "/" + host;
+                    
+                    // Add remaining path if any
+                    if (path != null && !path.isEmpty()) {
+                        urlToLoad += path;
+                    }
+                }
+                
+                // Add query parameters
+                if (query != null && !query.isEmpty()) {
+                    urlToLoad += "?" + query;
+                }
+            } else {
+                // Handle https scheme - just use the data URL
+                urlToLoad = data.toString();
+            }
             
-            // If the web view is already initialized, pass the URL
-            if (this.bridge != null && this.bridge.getWebView() != null) {
-                // Use JavaScript to handle the deep link in the web app
-                String jsCall = String.format(
-                    "window.dispatchEvent(new CustomEvent('deepLinkOpen', { detail: { url: '%s' } }));",
-                    pendingDeepLink.replace("'", "\\'")
-                );
-                this.bridge.getWebView().evaluateJavascript(jsCall, null);
+            // Load the URL in WebView
+            if (urlToLoad != null) {
+                bridge.getWebView().loadUrl(urlToLoad);
             }
         }
     }
