@@ -16,4 +16,8 @@ export default defineConfig({
     },
   },
   assetsInclude: ['**/*.pdf'],
+  base: './',
+  build: {
+    outDir: 'dist'
+  }
 })

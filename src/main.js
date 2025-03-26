@@ -24,6 +24,8 @@ if (window.location.hostname === 'aiccoin.nocorps.org' || window.location.hostna
   window.location.href = redirectUrl;
 }
 
+//npx cap init "AIC Coin" "aiccoin.nocorps.org" --web-dir=dist
+
 import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router';

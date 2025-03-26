@@ -34,6 +34,7 @@ import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firesto
 import { ref, onMounted, computed } from 'vue';
 // import Toast from '../components/Toast.vue';
 import Toast from '../components/TostAlert.vue';
+import {BASE_URL} from '../config';
 
 export default {
   components: {
@@ -91,8 +92,8 @@ export default {
 
     // Generate referral link
     const referralLink = computed(() => {
-      // return user.value ? `https://t.me/AIC_Coin_Bot/AIC/register?ref=${user.value.referralCode}` : '';
-      return user.value ? `${window.location.origin}/register?ref=${user.value.referralCode}` : '';
+      // Use fixed netlify domain instead of dynamic origin
+      return user.value ? `${BASE_URL}/register?ref=${user.value.referralCode}` : '';
     });
 
     // Copy referral link to clipboard
@@ -110,22 +111,35 @@ export default {
     };
 
     // Share referral link using the Web Share API
-    const shareReferralLink = () => {
-      if (navigator.share) {
-        navigator.share({
-          title: 'Join me on AIC Coin!',
-          text: 'Check out AIC Coin, and use my referral code!',
-          url: referralLink.value,
-        })
-        .then(() => {
+    const shareReferralLink = async () => {
+      try {
+        // Check if running in Capacitor environment
+        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+          // Use Capacitor Share plugin
+          const { Share } = await import('@capacitor/share');
+          await Share.share({
+            title: 'Join me on AIC Coin!',
+            text: 'Check out AIC Coin, and use my referral code!',
+            url: referralLink.value,
+            dialogTitle: 'Share AIC Coin'
+          });
           showToast('Link shared successfully! 🚀', 'success');
-        })
-        .catch((error) => {
-          console.error("Error sharing link:", error);
-          showToast('Failed to share link ❌', 'error');
-        });
-      } else {
-        showToast('Sharing is not supported on your browser 🔒', 'error');
+        } else if (navigator.share) {
+          // Use Web Share API for browsers
+          await navigator.share({
+            title: 'Join me on AIC Coin!',
+            text: 'Check out AIC Coin, and use my referral code!',
+            url: referralLink.value,
+          });
+          showToast('Link shared successfully! 🚀', 'success');
+        } else {
+          // Fallback for platforms without sharing capability
+          await navigator.clipboard.writeText(referralLink.value);
+          showToast('Link copied to clipboard! Share it manually 📋', 'success');
+        }
+      } catch (error) {
+        console.error("Error sharing:", error);
+        showToast('Failed to share link ❌', 'error');
       }
     };
 

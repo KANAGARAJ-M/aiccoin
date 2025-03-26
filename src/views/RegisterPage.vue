@@ -238,6 +238,22 @@
       </div>
     </form>
   </div>
+
+  <div v-if="showPlayStoreModal" class="modal-overlay">
+    <div class="modal-content">
+      <h3>Registration Successful! 🎉</h3>
+      <p>Download our Android app for the best experience</p>
+      <div class="modal-buttons">
+        <button @click="goToPlayStore" class="playstore-button">
+          <!-- <img src="@/assets/google-play-badge.png" alt="Get it on Google Play" /> -->
+          Get it on Google Play
+        </button>
+        <!-- <button @click="continueToWeb" class="web-button">
+          Continue to Web Version
+        </button> -->
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -289,6 +305,7 @@ export default {
     // Add new refs for validation
     const errors = ref([]);
     const isSubmitting = ref(false);
+    const showPlayStoreModal = ref(false);
 
     const validateForm = () => {
       errors.value = [];
@@ -373,8 +390,8 @@ export default {
           await updateReferralSystem(referralCode.value, userId, email.value, randomCoinBalance);
         }
         await updateCoinBalance(userId, 1000, 'Welcome bonus');
-        // Redirect after successful registration
-        router.push('/');
+        // Show Play Store Modal
+        showPlayStoreModal.value = true;
       } catch (error) {
         if (error.code === 'auth/email-already-in-use') {
           errors.value.push('This email address is already registered. Please login instead.');
@@ -392,6 +409,14 @@ export default {
       }
     };
 
+    const goToPlayStore = () => {
+      window.location.href = 'https://play.google.com/store/apps/details?id=aiccoin.nocorps.org';
+    };
+
+    const continueToWeb = () => {
+      router.push('/');
+    };
+
     return {
       name,
       email,
@@ -401,7 +426,10 @@ export default {
       referralCode,
       validateAndRegister, // Changed from register to validateAndRegister
       errors,
-      isSubmitting
+      isSubmitting,
+      showPlayStoreModal,
+      goToPlayStore,
+      continueToWeb
     };
   }
 };
@@ -770,5 +798,60 @@ select.input-field option[value=""] {
 .submit-button:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 10px;
+  text-align: center;
+  max-width: 400px;
+  width: 90%;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 1.5rem;
+}
+
+.playstore-button,
+.web-button {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.playstore-button {
+  background: #0f9d58;
+  color: #fff;
+  display: flex;
+  align-items: center;
+}
+
+.playstore-button img {
+  width: 20px;
+  height: 20px;
+  margin-right: 0.5rem;
+}
+
+.web-button {
+  background: #4285f4;
+  color: #fff;
 }
 </style>
